@@ -2,6 +2,8 @@
 #include <utility>
 #include <tuple>
 #include <cmath>
+#include <vector>
+#include <array>
 #include "app.h"
 
 // This line is needed on my local computer for some reason
@@ -52,9 +54,26 @@ void init(HWND hwnd) {
 	}
 
 	D2D1_POINT_2F pre_control_point = { -100, 0 };
-	std::tuple<FLOAT, FLOAT, FLOAT> points[] = {
-		{150, -20, 100},
-	};
+	std::array<std::tuple<FLOAT, FLOAT, FLOAT>, 9> pre_points = { {
+		{270, -20, 150},
+		{100, -100, 120},
+		{-130, -300, 100},
+		{2, -2, 1},
+		{70, -80, 80},
+		{-30, -50, 40},
+		{-110, 50, 70},
+		{-3, -1, 2},
+		{-169, -60, 100},
+	} };
+
+	std::vector<std::tuple<FLOAT, FLOAT, FLOAT>> points;
+	for (int i = 0; i < pre_points.size(); i++) {
+		points.push_back(pre_points[i]);
+	}
+	for (int i = pre_points.size() - 1; i >= 0; i--) {
+		auto [x, y, b] = pre_points[i];
+;		points.push_back({ x, -y, b });
+	}
 
 	ID2D1GeometrySink* g_sink;
 	bear_geometry->Open(&g_sink);
@@ -63,8 +82,10 @@ void init(HWND hwnd) {
 	D2D1_POINT_2F control_point = pre_control_point;
 	D2D1_POINT_2F previous_point = {0, 0};
 	for (auto [x, y, b_scale] : points) {
-		x += previous_point.x;
-		y += previous_point.x;
+		D2D1_POINT_2F current_point = {
+			x + previous_point.x,
+			y + previous_point.y,
+		};
 
 		D2D1_POINT_2F control_vector = { 
 			previous_point.x - control_point.x,
@@ -80,10 +101,10 @@ void init(HWND hwnd) {
 		};
 
 		g_sink->AddQuadraticBezier(
-			{ {control_point.x, control_point.y}, { x, y } }
+			{ {control_point.x, control_point.y}, { current_point.x, current_point.y } }
 		);
 
-		previous_point = { x, y };
+		previous_point = current_point;
 	}
 	
 	g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
@@ -134,7 +155,7 @@ void onPaint(HWND hwnd) {
 	if (!d2d_render_target) recreateRenderTarget(hwnd);
 
 	D2D1::Matrix3x2F transform = D2D1::Matrix3x2F::Identity();
-	d2d_render_target->SetTransform(D2D1::Matrix3x2F::Translation({ 400, 400 }));
+	d2d_render_target->SetTransform(D2D1::Matrix3x2F::Translation({ 400, 600 }));
 
 	d2d_render_target->BeginDraw();
 	d2d_render_target->Clear(background_color);
