@@ -14,6 +14,7 @@ namespace {
 	ID2D1Factory7* d2d_factory = nullptr;
 	ID2D1HwndRenderTarget* d2d_render_target = nullptr;
 	ID2D1SolidColorBrush* brush = nullptr;
+	ID2D1SolidColorBrush* fill_brush = nullptr;
 
 
 	// - Pędzel - gradient liniowy
@@ -31,9 +32,12 @@ namespace {
 	D2D1::Matrix3x2F transformation;
 
 	const D2D1_COLOR_F background_color =
-	{ .r = 1.0f, .g = 0.4f, .b = 0.4f, .a = 1.0f };
+	{ .r = 0.6f, .g = 0.2f, .b = 0.2f, .a = 1.0f };
 	const D2D1_COLOR_F main_color =
 	{ .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f };
+	const D2D1_COLOR_F fill_color =
+	{ .r = 0.1, .g = 0.6f, .b = 0.1f, .a = 1.0f };
+
 
 	ID2D1PathGeometry* bear_geometry = nullptr;
 
@@ -53,6 +57,7 @@ void init(HWND hwnd) {
 		exit(1);
 	}
 
+	// x, y, control_point distance from previus point
 	std::array<std::tuple<FLOAT, FLOAT, FLOAT>, 9> pre_points = { {
 		{270, -20, 150},
 		{100, -100, 120},
@@ -89,15 +94,17 @@ void init(HWND hwnd) {
 			previous_point.y + (control_vector.y / len) * b_scale
 		};
 
-		//points.push_back({ {control_point.x, control_point.y}, { current_point.x, current_point.y } });
-		points.push_back({ {current_point.x, current_point.y}, { control_point.x, control_point.y } });
+		points.push_back({ {control_point.x, control_point.y}, { current_point.x, current_point.y } });
+		
+		// evil version:
+		//points.push_back({ {current_point.x, current_point.y}, { control_point.x, control_point.y } });
 
 		previous_point = current_point;
 	}
 
 	ID2D1GeometrySink* g_sink;
 	bear_geometry->Open(&g_sink);
-	g_sink->BeginFigure({0, 0}, D2D1_FIGURE_BEGIN_HOLLOW);
+	g_sink->BeginFigure({0, 0}, D2D1_FIGURE_BEGIN_FILLED);
 	
 	for (auto [control_point, point]: points) {
 		g_sink->AddQuadraticBezier(
@@ -144,7 +151,11 @@ void recreateRenderTarget(HWND hwnd) {
 	if (brush) {
 		brush->Release();
 	}
+	if (fill_brush) {
+		fill_brush->Release();
+	}
 	d2d_render_target->CreateSolidColorBrush(main_color, &brush);
+	d2d_render_target->CreateSolidColorBrush(fill_color, &fill_brush);
 }
 
 void destroyRenderTarget() {
@@ -169,7 +180,7 @@ void onPaint(HWND hwnd) {
 	d2d_render_target->Clear(background_color);
 
 	d2d_render_target->DrawGeometry(bear_geometry, brush, 5);
-	d2d_render_target->FillGeometry(bear_geometry, brush, 5);
+	d2d_render_target->FillGeometry(bear_geometry, fill_brush);
 
 	if (d2d_render_target->EndDraw() == D2DERR_RECREATE_TARGET) {
 		destroyRenderTarget();
