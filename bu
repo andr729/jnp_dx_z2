@@ -53,7 +53,6 @@ void init(HWND hwnd) {
 		exit(1);
 	}
 
-	D2D1_POINT_2F pre_control_point = { -100, 0 };
 	std::array<std::tuple<FLOAT, FLOAT, FLOAT>, 9> pre_points = { {
 		{270, -20, 150},
 		{100, -100, 120},
@@ -63,31 +62,21 @@ void init(HWND hwnd) {
 		{-30, -50, 40},
 		{-110, 50, 70},
 		{-3, -1, 2},
-		{-169, -60, 100},
+		{-169, -70, 80},
 	} };
 
-	std::vector<std::tuple<FLOAT, FLOAT, FLOAT>> points;
-	for (int i = 0; i < pre_points.size(); i++) {
-		points.push_back(pre_points[i]);
-	}
-	for (int i = pre_points.size() - 1; i >= 0; i--) {
-		auto [x, y, b] = pre_points[i];
-;		points.push_back({ x, -y, b });
-	}
+	std::vector<std::pair<D2D1_POINT_2F, D2D1_POINT_2F>> points;
 
-	ID2D1GeometrySink* g_sink;
-	bear_geometry->Open(&g_sink);
-	g_sink->BeginFigure({0, 0}, D2D1_FIGURE_BEGIN_HOLLOW);
-	
+	D2D1_POINT_2F pre_control_point = { -100, 0 };
 	D2D1_POINT_2F control_point = pre_control_point;
-	D2D1_POINT_2F previous_point = {0, 0};
-	for (auto [x, y, b_scale] : points) {
+	D2D1_POINT_2F previous_point = { 0, 0 };
+	for (auto [x, y, b_scale] : pre_points) {
 		D2D1_POINT_2F current_point = {
 			x + previous_point.x,
 			y + previous_point.y,
 		};
 
-		D2D1_POINT_2F control_vector = { 
+		D2D1_POINT_2F control_vector = {
 			previous_point.x - control_point.x,
 			previous_point.y - control_point.y
 		};
@@ -100,12 +89,30 @@ void init(HWND hwnd) {
 			previous_point.y + (control_vector.y / len) * b_scale
 		};
 
-		g_sink->AddQuadraticBezier(
-			{ {control_point.x, control_point.y}, { current_point.x, current_point.y } }
-		);
+		points.push_back({ {control_point.x, control_point.y}, { current_point.x, current_point.y } });
 
 		previous_point = current_point;
 	}
+
+	ID2D1GeometrySink* g_sink;
+	bear_geometry->Open(&g_sink);
+	g_sink->BeginFigure({0, 0}, D2D1_FIGURE_BEGIN_HOLLOW);
+	
+	for (auto [control_point, point]: points) {
+		g_sink->AddQuadraticBezier(
+			{ {control_point.x, control_point.y}, { point.x, point.y } }
+		);
+	}
+	for (int i = points.size() - 2; i >= 0; i--) {
+		auto [control_point, _1] = points[i + 1];
+		auto [_2, point] = points[i];
+		g_sink->AddQuadraticBezier(
+			{ {-control_point.x, control_point.y}, { -point.x, point.y } }
+		);
+	}
+	g_sink->AddQuadraticBezier(
+		{ {-points[0].first.x, points[0].first.y}, {0, 0}}
+	);
 	
 	g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
 	g_sink->Close();
