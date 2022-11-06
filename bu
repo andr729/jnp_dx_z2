@@ -89,7 +89,8 @@ void init(HWND hwnd) {
 			previous_point.y + (control_vector.y / len) * b_scale
 		};
 
-		points.push_back({ {control_point.x, control_point.y}, { current_point.x, current_point.y } });
+		//points.push_back({ {control_point.x, control_point.y}, { current_point.x, current_point.y } });
+		points.push_back({ {current_point.x, current_point.y}, { control_point.x, control_point.y } });
 
 		previous_point = current_point;
 	}
@@ -168,6 +169,7 @@ void onPaint(HWND hwnd) {
 	d2d_render_target->Clear(background_color);
 
 	d2d_render_target->DrawGeometry(bear_geometry, brush, 5);
+	d2d_render_target->FillGeometry(bear_geometry, brush, 5);
 
 	if (d2d_render_target->EndDraw() == D2DERR_RECREATE_TARGET) {
 		destroyRenderTarget();
