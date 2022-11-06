@@ -1,0 +1,148 @@
+#include <d2d1_3.h>
+#include <utility>
+#include <tuple>
+#include <cmath>
+#include "app.h"
+
+// This line is needed on my local computer for some reason
+// I suspose I have errors in linker configuration
+#pragma comment(lib, "d2d1")
+
+namespace {
+	ID2D1Factory7* d2d_factory = nullptr;
+	ID2D1HwndRenderTarget* d2d_render_target = nullptr;
+	ID2D1SolidColorBrush* brush = nullptr;
+
+
+	// - Pędzel - gradient liniowy
+	ID2D1LinearGradientBrush* lin_brush = nullptr;
+	ID2D1GradientStopCollection* lin_stops = nullptr;
+	UINT const NUM_LIN_STOPS = 3;
+	D2D1_GRADIENT_STOP lin_stops_data[NUM_LIN_STOPS];
+	// - Pędzel - gradient promienisty
+	ID2D1RadialGradientBrush* rad_brush = nullptr;
+	ID2D1GradientStopCollection* rad_stops = nullptr;
+	UINT const NUM_RAD_STOPS = 2;
+	D2D1_GRADIENT_STOP rad_stops_data[NUM_RAD_STOPS];
+
+	// - Macierz do połączenia transformacji
+	D2D1::Matrix3x2F transformation;
+
+	const D2D1_COLOR_F background_color =
+	{ .r = 1.0f, .g = 0.4f, .b = 0.4f, .a = 1.0f };
+	const D2D1_COLOR_F main_color =
+	{ .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f };
+
+	ID2D1PathGeometry* bear_geometry = nullptr;
+
+	FLOAT window_size_x;
+	FLOAT window_size_y;
+}
+
+
+
+void init(HWND hwnd) {
+	D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2d_factory);
+	if (d2d_factory == nullptr) {
+		exit(1);
+	}
+	d2d_factory->CreatePathGeometry(&bear_geometry);
+	if (bear_geometry == nullptr) {
+		exit(1);
+	}
+
+	D2D1_POINT_2F pre_control_point = { -100, 0 };
+	std::tuple<FLOAT, FLOAT, FLOAT> points[] = {
+		{150, -20, 100},
+	};
+
+	ID2D1GeometrySink* g_sink;
+	bear_geometry->Open(&g_sink);
+	g_sink->BeginFigure({0, 0}, D2D1_FIGURE_BEGIN_HOLLOW);
+	
+	D2D1_POINT_2F control_point = pre_control_point;
+	D2D1_POINT_2F previous_point = {0, 0};
+	for (auto [x, y, b_scale] : points) {
+		x += previous_point.x;
+		y += previous_point.x;
+
+		D2D1_POINT_2F control_vector = { 
+			previous_point.x - control_point.x,
+			previous_point.y - control_point.y
+		};
+
+		// normalize vector:
+		FLOAT len2 = control_vector.x * control_vector.x + control_vector.y * control_vector.y;
+		FLOAT len = std::sqrtf(len2 + 1e-10);
+		control_point = {
+			previous_point.x + (control_vector.x / len) * b_scale,
+			previous_point.y + (control_vector.y / len) * b_scale
+		};
+
+		g_sink->AddQuadraticBezier(
+			{ {control_point.x, control_point.y}, { x, y } }
+		);
+
+		previous_point = { x, y };
+	}
+	
+	g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
+	g_sink->Close();
+
+	recreateRenderTarget(hwnd);
+}
+
+void recreateRenderTarget(HWND hwnd) {
+	RECT rc;
+	GetClientRect(hwnd, &rc);
+
+	window_size_x = static_cast<FLOAT>(rc.right - rc.left);
+	window_size_y = static_cast<FLOAT>(rc.bottom - rc.top);
+
+	d2d_factory->CreateHwndRenderTarget(
+		D2D1::RenderTargetProperties(),
+		D2D1::HwndRenderTargetProperties(hwnd,
+			D2D1::SizeU(static_cast<UINT32>(rc.right) -
+				static_cast<UINT32>(rc.left),
+				static_cast<UINT32>(rc.bottom) -
+				static_cast<UINT32>(rc.top))),
+		&d2d_render_target);
+
+	if (d2d_render_target == NULL) {
+		exit(3);
+	}
+
+	if (brush) {
+		brush->Release();
+	}
+	d2d_render_target->CreateSolidColorBrush(main_color, &brush);
+}
+
+void destroyRenderTarget() {
+	if (d2d_render_target) {
+		d2d_render_target->Release();
+		d2d_render_target = nullptr;
+	}
+}
+
+void destroy() {
+	if (d2d_render_target) d2d_render_target->Release();
+	if (d2d_factory) d2d_factory->Release();
+}
+
+void onPaint(HWND hwnd) {
+	if (!d2d_render_target) recreateRenderTarget(hwnd);
+
+	D2D1::Matrix3x2F transform = D2D1::Matrix3x2F::Identity();
+	d2d_render_target->SetTransform(D2D1::Matrix3x2F::Translation({ 400, 400 }));
+
+	d2d_render_target->BeginDraw();
+	d2d_render_target->Clear(background_color);
+
+	d2d_render_target->DrawGeometry(bear_geometry, brush, 5);
+
+	if (d2d_render_target->EndDraw() == D2DERR_RECREATE_TARGET) {
+		destroyRenderTarget();
+		onPaint(hwnd);
+	}
+}
