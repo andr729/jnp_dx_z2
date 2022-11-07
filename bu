@@ -50,6 +50,12 @@ namespace {
 
 	FLOAT window_size_x;
 	FLOAT window_size_y;
+
+	FLOAT mouse_x = 0;
+	FLOAT mouse_y = 0;
+
+	FLOAT base_x_offset = 400;
+	FLOAT base_y_offset = 600;
 }
 
 
@@ -203,6 +209,10 @@ void destroy() {
 	if (d2d_factory) d2d_factory->Release();
 }
 
+void onMouseMove(FLOAT x, FLOAT y)  {
+	mouse_x = x - base_x_offset;
+	mouse_y = y - base_y_offset;
+}
 
 // changed transforamtion matrix
 void draw_eye(ID2D1HwndRenderTarget* drt, FLOAT x, FLOAT y) {
@@ -220,7 +230,7 @@ void onPaint(HWND hwnd) {
 	d2d_render_target->BeginDraw();
 	d2d_render_target->Clear(background_color);
 	
-	base_transformation = D2D1::Matrix3x2F::Translation({ 400, 600 });
+	base_transformation = D2D1::Matrix3x2F::Translation({ base_x_offset, base_y_offset });
 
 	d2d_render_target->SetTransform(base_transformation);
 
@@ -229,6 +239,7 @@ void onPaint(HWND hwnd) {
 
 	draw_eye(d2d_render_target, -150, -350);
 	draw_eye(d2d_render_target, 150, -350);
+	draw_eye(d2d_render_target, mouse_x, mouse_y);
 
 	if (d2d_render_target->EndDraw() == D2DERR_RECREATE_TARGET) {
 		destroyRenderTarget();
