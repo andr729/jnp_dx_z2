@@ -16,17 +16,14 @@ namespace {
 	ID2D1SolidColorBrush* brush = nullptr;
 	ID2D1SolidColorBrush* fill_brush = nullptr;
 
-
-	// - Pędzel - gradient liniowy
-	ID2D1LinearGradientBrush* lin_brush = nullptr;
-	ID2D1GradientStopCollection* lin_stops = nullptr;
-	UINT const NUM_LIN_STOPS = 3;
-	D2D1_GRADIENT_STOP lin_stops_data[NUM_LIN_STOPS];
-	// - Pędzel - gradient promienisty
+	// Radial gradient brush
 	ID2D1RadialGradientBrush* rad_brush = nullptr;
 	ID2D1GradientStopCollection* rad_stops = nullptr;
 	UINT const NUM_RAD_STOPS = 2;
-	D2D1_GRADIENT_STOP rad_stops_data[NUM_RAD_STOPS];
+	D2D1_GRADIENT_STOP rad_stops_data[NUM_RAD_STOPS] = {
+		{.position = 0.0f, .color = D2D1::ColorF(0.4f, 0.9f, 0.4f, 1.0f) },
+		{.position = 1.0f, .color = D2D1::ColorF(0.0f, 0.3f, 0.0f, 1.0f) },
+	};
 
 	// - Macierz do połączenia transformacji
 	D2D1::Matrix3x2F transformation;
@@ -145,7 +142,7 @@ void recreateRenderTarget(HWND hwnd) {
 		&d2d_render_target);
 
 	if (d2d_render_target == NULL) {
-		exit(3);
+		exit(1);
 	}
 
 	if (brush) {
@@ -156,6 +153,20 @@ void recreateRenderTarget(HWND hwnd) {
 	}
 	d2d_render_target->CreateSolidColorBrush(main_color, &brush);
 	d2d_render_target->CreateSolidColorBrush(fill_color, &fill_brush);
+
+	// Utworzenie gradientu promienistego
+	d2d_render_target->CreateGradientStopCollection(
+		rad_stops_data, NUM_RAD_STOPS, &rad_stops);
+
+	if (rad_stops) {
+		d2d_render_target->CreateRadialGradientBrush(
+			D2D1::RadialGradientBrushProperties({0, -230}, {0, 0}, 500, 500),
+			rad_stops, &rad_brush);
+	}
+	else {
+		exit(1);
+	}
+
 }
 
 void destroyRenderTarget() {
@@ -173,14 +184,13 @@ void destroy() {
 void onPaint(HWND hwnd) {
 	if (!d2d_render_target) recreateRenderTarget(hwnd);
 
-	D2D1::Matrix3x2F transform = D2D1::Matrix3x2F::Identity();
-	d2d_render_target->SetTransform(D2D1::Matrix3x2F::Translation({ 400, 600 }));
-
 	d2d_render_target->BeginDraw();
 	d2d_render_target->Clear(background_color);
+	
+	d2d_render_target->SetTransform(D2D1::Matrix3x2F::Translation({ 400, 600 }));
 
 	d2d_render_target->DrawGeometry(bear_geometry, brush, 5);
-	d2d_render_target->FillGeometry(bear_geometry, fill_brush);
+	d2d_render_target->FillGeometry(bear_geometry, rad_brush);
 
 	if (d2d_render_target->EndDraw() == D2DERR_RECREATE_TARGET) {
 		destroyRenderTarget();
