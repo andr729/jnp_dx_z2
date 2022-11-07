@@ -58,6 +58,11 @@ namespace {
 	FLOAT base_y_offset = 600;
 }
 
+D2D1_POINT_2F normalize(D2D1_POINT_2F p) {
+	FLOAT len2 = p.x * p.x + p.y * p.y;
+	FLOAT len = std::sqrtf(len2 + 1e-10);
+	return { p.x / len, p.y / len };
+}
 
 void init(HWND hwnd) {
 	D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2d_factory);
@@ -99,11 +104,11 @@ void init(HWND hwnd) {
 		};
 
 		// normalize vector:
-		FLOAT len2 = control_vector.x * control_vector.x + control_vector.y * control_vector.y;
-		FLOAT len = std::sqrtf(len2 + 1e-10);
+
+		control_vector = normalize(control_vector);
 		control_point = {
-			previous_point.x + (control_vector.x / len) * b_scale,
-			previous_point.y + (control_vector.y / len) * b_scale
+			previous_point.x + control_vector.x * b_scale,
+			previous_point.y + control_vector.y * b_scale
 		};
 
 		points.push_back({ {control_point.x, control_point.y}, { current_point.x, current_point.y } });
@@ -222,6 +227,13 @@ void draw_eye(ID2D1HwndRenderTarget* drt, FLOAT x, FLOAT y) {
 	d2d_render_target->SetTransform(trn);
 	d2d_render_target->DrawEllipse(D2D1::Ellipse({ 0, 0 }, 100, 100), brush);
 	d2d_render_target->FillEllipse(D2D1::Ellipse({ 0, 0 }, 100, 100), eye_brush);
+
+	D2D1_POINT_2F mouse_vec = {mouse_x - x, mouse_y - y};
+	mouse_vec = normalize(mouse_vec);
+	mouse_vec.x *= 70;
+	mouse_vec.y *= 70;
+
+	d2d_render_target->FillEllipse(D2D1::Ellipse(mouse_vec, 30, 30), brush);
 }
 
 void onPaint(HWND hwnd) {
