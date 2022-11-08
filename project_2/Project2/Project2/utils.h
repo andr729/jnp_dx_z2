@@ -18,8 +18,6 @@ struct RadBrushState {
 };
 
 
-
-
 namespace detail {
 	void auxMakeRadBrush(ID2D1RadialGradientBrush** brush,
 			   	  ID2D1HwndRenderTarget* drt, D2D1_GRADIENT_STOP* stop_data,
@@ -37,7 +35,6 @@ void makeRadBrush(RadBrushState<NUM_STOPS>& state, ID2D1HwndRenderTarget* drt,
 		rx, ry
 	);
 }
-
 
 
 template<int n>

@@ -111,7 +111,8 @@ void recreateRenderTarget(HWND hwnd) {
 	d2d_factory->CreateHwndRenderTarget(
 		D2D1::RenderTargetProperties(),
 		D2D1::HwndRenderTargetProperties(hwnd,
-			D2D1::SizeU(static_cast<UINT32>(rc.right) -
+			D2D1::SizeU(
+				static_cast<UINT32>(rc.right) -
 				static_cast<UINT32>(rc.left),
 				static_cast<UINT32>(rc.bottom) -
 				static_cast<UINT32>(rc.top))),
