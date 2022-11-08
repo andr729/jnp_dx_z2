@@ -55,6 +55,8 @@ namespace {
 	FLOAT mouse_x = 0;
 	FLOAT mouse_y = 0;
 
+	bool mouse_left_down;
+
 	FLOAT base_x_offset = 400;
 	FLOAT base_y_offset = 600;
 
@@ -83,6 +85,10 @@ void init(HWND hwnd) {
 	if (sad_geometry == nullptr) {
 		exit(1);
 	}
+	d2d_factory->CreatePathGeometry(&happy_geometry);
+	if (sad_geometry == nullptr) {
+		exit(1);
+	}
 
 	// x, y, control_point distance from previus point
 	BezierDefinition<9> bear_pre_points = { {
@@ -108,14 +114,23 @@ void init(HWND hwnd) {
 	makeID2D1PathGeometry(&nouse_geometry, nouse_points);
 
 
-	ID2D1GeometrySink* g_sink;
-	sad_geometry->Open(&g_sink);
-	g_sink->BeginFigure({ -100, 100 }, D2D1_FIGURE_BEGIN_HOLLOW);
-	g_sink->AddArc(D2D1_ARC_SEGMENT{
-		{100, 100}, {200, 100}, 50, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_SMALL
+	ID2D1GeometrySink* sad_g_sink;
+	sad_geometry->Open(&sad_g_sink);
+	sad_g_sink->BeginFigure({ -100, 100 }, D2D1_FIGURE_BEGIN_HOLLOW);
+	sad_g_sink->AddArc(D2D1_ARC_SEGMENT{
+		{100, 100}, {200, 200}, 0, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_SMALL
 	});
-	g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
-	g_sink->Close();
+	sad_g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
+	sad_g_sink->Close();
+
+	ID2D1GeometrySink* happy_g_sink;
+	happy_geometry->Open(&happy_g_sink);
+	happy_g_sink->BeginFigure({ 100, 100 }, D2D1_FIGURE_BEGIN_HOLLOW);
+	happy_g_sink->AddArc(D2D1_ARC_SEGMENT{
+		{-100, 100}, {150, 150}, 0, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_SMALL
+	});
+	happy_g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
+	happy_g_sink->Close();
 
 
 	recreateRenderTarget(hwnd);
@@ -184,6 +199,10 @@ void onMouseMove(FLOAT x, FLOAT y)  {
 	mouse_y = y - base_y_offset;
 }
 
+void setMouse(bool is_left_down) {
+	mouse_left_down = is_left_down;
+}
+
 // changes transforamtion matrix
 void draw_eye(ID2D1HwndRenderTarget* drt, FLOAT x, FLOAT y) {
 	auto trn = base_transformation;
@@ -231,7 +250,12 @@ void onPaint(HWND hwnd) {
 	d2d_render_target->DrawGeometry(nouse_geometry, brush, 5);
 	d2d_render_target->FillGeometry(nouse_geometry, nouse_brush);
 
-	d2d_render_target->DrawGeometry(sad_geometry, brush, 5);
+	if (mouse_left_down) {
+		d2d_render_target->DrawGeometry(happy_geometry, brush, 5);
+	}
+	else {
+		d2d_render_target->DrawGeometry(sad_geometry, brush, 5);
+	}
 
 	if (d2d_render_target->EndDraw() == D2DERR_RECREATE_TARGET) {
 		destroyRenderTarget();

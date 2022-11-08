@@ -5,6 +5,7 @@
 
 void init(HWND hwnd);
 void tick();
+void setMouse(bool down);
 void recreateRenderTarget(HWND hwnd);
 void destroyRenderTarget();
 void destroy();

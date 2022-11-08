@@ -17,7 +17,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		ValidateRect(hwnd, nullptr);
 		return 0;
 	case WM_MOUSEMOVE:
+		setMouse(GetAsyncKeyState(VK_LBUTTON) < 0);
 		onMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	case WM_LBUTTONDOWN:
+		setMouse(true);
+		return 0;
+	case WM_LBUTTONUP:
+		setMouse(false);
 		return 0;
 	case WM_TIMER:
 		switch (wParam) {
