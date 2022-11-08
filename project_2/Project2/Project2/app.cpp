@@ -16,6 +16,7 @@ namespace {
 	ID2D1HwndRenderTarget* d2d_render_target = nullptr;
 	ID2D1SolidColorBrush* brush = nullptr;
 	ID2D1SolidColorBrush* fill_brush = nullptr;
+	ID2D1SolidColorBrush* nouse_brush = nullptr;
 
 	RadBrushState<2> bear_brush = {
 		nullptr, nullptr,
@@ -35,19 +36,22 @@ namespace {
 	};
 
 
-	// - Macierz do połączenia transformacji
+	// Transformation matrices
 	D2D1::Matrix3x2F base_transformation;
 	D2D1::Matrix3x2F transformation;
 
-	const D2D1_COLOR_F background_color =
-	{ .r = 0.6f, .g = 0.2f, .b = 0.2f, .a = 1.0f };
-	const D2D1_COLOR_F main_color =
-	{ .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f };
-	const D2D1_COLOR_F fill_color =
-	{ .r = 0.1, .g = 0.6f, .b = 0.1f, .a = 1.0f };
+	constexpr D2D1_COLOR_F background_color =
+		{ .r = 0.6f, .g = 0.2f, .b = 0.2f, .a = 1.0f };
+	constexpr D2D1_COLOR_F main_color =
+		{ .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f };
+	constexpr D2D1_COLOR_F fill_color =
+		{ .r = 0.1, .g = 0.6f, .b = 0.1f, .a = 1.0f };
+	constexpr D2D1_COLOR_F nouse_color =
+		{ .r = 0.2, .g = 0.2f, .b = 0.2f, .a = 1.0f };
 
 
 	ID2D1PathGeometry* bear_geometry = nullptr;
+	ID2D1PathGeometry* nouse_geometry = nullptr;
 
 	FLOAT window_size_x;
 	FLOAT window_size_y;
@@ -69,9 +73,13 @@ void init(HWND hwnd) {
 	if (bear_geometry == nullptr) {
 		exit(1);
 	}
+	d2d_factory->CreatePathGeometry(&nouse_geometry);
+	if (nouse_geometry == nullptr) {
+		exit(1);
+	}
 
 	// x, y, control_point distance from previus point
-	BezierDefinition<9> pre_points = { {
+	BezierDefinition<9> bear_pre_points = { {
 		{270, -20, 150},
 		{100, -100, 120},
 		{-130, -300, 100},
@@ -82,21 +90,17 @@ void init(HWND hwnd) {
 		{-3, -1, 2},
 		{-169, -70, 80},
 	} };
+	BezierPoints bear_points = makeBezierPoints(bear_pre_points, true, false);
+	makeID2D1PathGeometry(&bear_geometry, bear_points);
 
-	BezierPoints points = makeBezierPoints(pre_points, true, false);
-	
-	ID2D1GeometrySink* g_sink;
-	bear_geometry->Open(&g_sink);
-	g_sink->BeginFigure({0, 0}, D2D1_FIGURE_BEGIN_FILLED);
-	
-	for (auto [control_point, point]: points) {
-		g_sink->AddQuadraticBezier(
-			{ {control_point.x, control_point.y}, { point.x, point.y } }
-		);
-	}
+	BezierDefinition<3> nouse_pre_points = { {
+		{60, -10, 40},
+		{-20, -50, 20},
+		{-40, -20, 27},
+	} };
+	BezierPoints nouse_points = makeBezierPoints(nouse_pre_points, true, false);
+	makeID2D1PathGeometry(&nouse_geometry, nouse_points);
 
-	g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
-	g_sink->Close();
 
 	recreateRenderTarget(hwnd);
 }
@@ -128,8 +132,12 @@ void recreateRenderTarget(HWND hwnd) {
 	if (fill_brush) {
 		fill_brush->Release();
 	}
+	if (nouse_brush) {
+		nouse_brush->Release();
+	}
 	d2d_render_target->CreateSolidColorBrush(main_color, &brush);
 	d2d_render_target->CreateSolidColorBrush(fill_color, &fill_brush);
+	d2d_render_target->CreateSolidColorBrush(nouse_color, &nouse_brush);
 
 	makeRadBrush<2>(
 		bear_brush, d2d_render_target,
@@ -188,13 +196,19 @@ void onPaint(HWND hwnd) {
 	
 	base_transformation = D2D1::Matrix3x2F::Translation({ base_x_offset, base_y_offset });
 
+	// bear:
 	d2d_render_target->SetTransform(base_transformation);
-
 	d2d_render_target->DrawGeometry(bear_geometry, brush, 5);
 	d2d_render_target->FillGeometry(bear_geometry, bear_brush.brush);
 
+	// eyes:
 	draw_eye(d2d_render_target, -150, -350);
 	draw_eye(d2d_render_target, 150, -350);
+
+	// nouse:
+	d2d_render_target->SetTransform(base_transformation);
+	d2d_render_target->DrawGeometry(nouse_geometry, brush, 5);
+	d2d_render_target->FillGeometry(nouse_geometry, nouse_brush);
 
 	if (d2d_render_target->EndDraw() == D2DERR_RECREATE_TARGET) {
 		destroyRenderTarget();

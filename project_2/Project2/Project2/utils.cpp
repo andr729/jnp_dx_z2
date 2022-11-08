@@ -32,3 +32,19 @@ namespace detail{
 	}
 }
 
+void makeID2D1PathGeometry(ID2D1PathGeometry** out_geometry, const BezierPoints& points) {
+	ID2D1GeometrySink* g_sink;
+	(*out_geometry)->Open(&g_sink);
+	g_sink->BeginFigure({ 0, 0 }, D2D1_FIGURE_BEGIN_FILLED);
+
+	for (auto [control_point, point] : points) {
+		g_sink->AddQuadraticBezier(
+			{ {control_point.x, control_point.y}, { point.x, point.y } }
+		);
+	}
+
+	g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
+	g_sink->Close();
+}
+
+

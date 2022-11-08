@@ -42,6 +42,8 @@ using BezierDefinition = std::array<std::tuple<FLOAT, FLOAT, FLOAT>, n>;
 
 using BezierPoints = std::vector<std::pair<D2D1_POINT_2F, D2D1_POINT_2F>>;
 
+void makeID2D1PathGeometry(ID2D1PathGeometry** out, const BezierPoints& points);
+
 /**
 * Allways start from (0, 0), and control point parallel to y-axis.
 * If y_symetry == true then curve symetric to x-axis will be added % point in between.
