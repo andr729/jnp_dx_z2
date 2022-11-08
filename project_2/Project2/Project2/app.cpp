@@ -57,8 +57,8 @@ namespace {
 
 	bool mouse_left_down;
 
-	FLOAT base_x_offset = 400;
-	FLOAT base_y_offset = 600;
+	FLOAT base_x_offset = 0;
+	FLOAT base_y_offset = 300;
 
 	UINT64 tick_count;
 }
@@ -195,8 +195,8 @@ void destroy() {
 }
 
 void onMouseMove(FLOAT x, FLOAT y)  {
-	mouse_x = x - base_x_offset;
-	mouse_y = y - base_y_offset;
+	mouse_x = x - window_size_x / 2 - base_x_offset;
+	mouse_y = y - window_size_y / 2 - base_y_offset;
 }
 
 void setMouse(bool is_left_down) {
@@ -229,7 +229,7 @@ void onPaint(HWND hwnd) {
 	d2d_render_target->BeginDraw();
 	d2d_render_target->Clear(background_color);
 	
-	base_transformation = D2D1::Matrix3x2F::Translation({ base_x_offset, base_y_offset });
+	base_transformation = D2D1::Matrix3x2F::Translation({ window_size_x / 2 + base_x_offset, window_size_y / 2 + base_y_offset });
 
 	// bear:
 	d2d_render_target->SetTransform(base_transformation.getInner());
