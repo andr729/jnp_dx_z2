@@ -17,23 +17,23 @@ namespace {
 	ID2D1SolidColorBrush* brush = nullptr;
 	ID2D1SolidColorBrush* fill_brush = nullptr;
 
-	// Radial gradient brush
-	ID2D1RadialGradientBrush* rad_brush = nullptr;
-	ID2D1GradientStopCollection* rad_stops = nullptr;
-	UINT const NUM_RAD_STOPS = 2;
-	D2D1_GRADIENT_STOP rad_stops_data[NUM_RAD_STOPS] = {
-		{.position = 0.0f, .color = D2D1::ColorF(0.4f, 0.9f, 0.4f, 1.0f) },
-		{.position = 1.0f, .color = D2D1::ColorF(0.0f, 0.3f, 0.0f, 1.0f) },
+	RadBrushState<2> bear_brush = {
+		nullptr, nullptr,
+		{
+			{.position = 0.0f, .color = D2D1::ColorF(0.4f, 0.9f, 0.4f, 1.0f) },
+			{.position = 1.0f, .color = D2D1::ColorF(0.0f, 0.3f, 0.0f, 1.0f) },
+		}
 	};
 
-	ID2D1RadialGradientBrush* eye_brush = nullptr;
-	ID2D1GradientStopCollection* eye_rad_stops = nullptr;
-	UINT const NUM_EYE_RAD_STOPS = 3;
-	D2D1_GRADIENT_STOP rad_eye_stops_data[NUM_EYE_RAD_STOPS] = {
-		{.position = 0.0f, .color = D2D1::ColorF(0.9f, 0.9f, 0.9f, 1.0f) },
-		{.position = 0.8f, .color = D2D1::ColorF(0.9f, 0.9f, 0.9f, 1.0f) },
-		{.position = 1.0f, .color = D2D1::ColorF(0.2f, 0.2f, 0.2f, 1.0f) },
+	RadBrushState<3> eye_brush = {
+		nullptr, nullptr,
+		{
+			{.position = 0.0f, .color = D2D1::ColorF(0.9f, 0.9f, 0.9f, 1.0f) },
+			{.position = 0.8f, .color = D2D1::ColorF(0.9f, 0.9f, 0.9f, 1.0f) },
+			{.position = 1.0f, .color = D2D1::ColorF(0.2f, 0.2f, 0.2f, 1.0f) },
+		}
 	};
+
 
 	// - Macierz do połączenia transformacji
 	D2D1::Matrix3x2F base_transformation;
@@ -130,19 +130,16 @@ void recreateRenderTarget(HWND hwnd) {
 	d2d_render_target->CreateSolidColorBrush(main_color, &brush);
 	d2d_render_target->CreateSolidColorBrush(fill_color, &fill_brush);
 
-	makeRadBrush(
-		&rad_brush, d2d_render_target,
-		rad_stops_data, NUM_RAD_STOPS,
-		&rad_stops,
-		{ 0, -230 }, { 0, 0 }, 500, 500
+	makeRadBrush<2>(
+		bear_brush, d2d_render_target,
+		{ 0, -230 }, 500, 500
 	);
 
-	makeRadBrush(
-		&eye_brush, d2d_render_target,
-		rad_eye_stops_data, NUM_EYE_RAD_STOPS,
-		&eye_rad_stops,
-		{0, 0}, {0, 0}, 100, 100
+	makeRadBrush<3>(
+		eye_brush, d2d_render_target,
+		{ 0, 0 }, 100, 100
 	);
+
 }
 
 void destroyRenderTarget() {
@@ -169,7 +166,7 @@ void draw_eye(ID2D1HwndRenderTarget* drt, FLOAT x, FLOAT y) {
 
 	d2d_render_target->SetTransform(trn);
 	d2d_render_target->DrawEllipse(D2D1::Ellipse({ 0, 0 }, 100, 100), brush);
-	d2d_render_target->FillEllipse(D2D1::Ellipse({ 0, 0 }, 100, 100), eye_brush);
+	d2d_render_target->FillEllipse(D2D1::Ellipse({ 0, 0 }, 100, 100), eye_brush.brush);
 
 	D2D1_POINT_2F mouse_vec = {mouse_x - x, mouse_y - y};
 	auto dist = vecLen(mouse_vec);
@@ -193,7 +190,7 @@ void onPaint(HWND hwnd) {
 	d2d_render_target->SetTransform(base_transformation);
 
 	d2d_render_target->DrawGeometry(bear_geometry, brush, 5);
-	d2d_render_target->FillGeometry(bear_geometry, rad_brush);
+	d2d_render_target->FillGeometry(bear_geometry, bear_brush.brush);
 
 	draw_eye(d2d_render_target, -150, -350);
 	draw_eye(d2d_render_target, 150, -350);
