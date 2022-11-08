@@ -130,32 +130,19 @@ void recreateRenderTarget(HWND hwnd) {
 	d2d_render_target->CreateSolidColorBrush(main_color, &brush);
 	d2d_render_target->CreateSolidColorBrush(fill_color, &fill_brush);
 
-	// Utworzenie gradientu promienistego
-	d2d_render_target->CreateGradientStopCollection(
-		rad_stops_data, NUM_RAD_STOPS, &rad_stops);
+	makeRadBrush(
+		&rad_brush, d2d_render_target,
+		rad_stops_data, NUM_RAD_STOPS,
+		&rad_stops,
+		{ 0, -230 }, { 0, 0 }, 500, 500
+	);
 
-	// Utworzenie gradientu promienistego
-	d2d_render_target->CreateGradientStopCollection(
-		rad_eye_stops_data, NUM_EYE_RAD_STOPS, &eye_rad_stops);
-
-	if (rad_stops) {
-		d2d_render_target->CreateRadialGradientBrush(
-			D2D1::RadialGradientBrushProperties({0, -230}, {0, 0}, 500, 500),
-			rad_stops, &rad_brush);
-	}
-	else {
-		exit(1);
-	}
-
-	if (eye_rad_stops) {
-		d2d_render_target->CreateRadialGradientBrush(
-			D2D1::RadialGradientBrushProperties({ 0, 0 }, { 0, 0 }, 100, 100),
-			eye_rad_stops, &eye_brush);
-	}
-	else {
-		exit(1);
-	}
-
+	makeRadBrush(
+		&eye_brush, d2d_render_target,
+		rad_eye_stops_data, NUM_EYE_RAD_STOPS,
+		&eye_rad_stops,
+		{0, 0}, {0, 0}, 100, 100
+	);
 }
 
 void destroyRenderTarget() {
@@ -175,7 +162,7 @@ void onMouseMove(FLOAT x, FLOAT y)  {
 	mouse_y = y - base_y_offset;
 }
 
-// changed transforamtion matrix
+// changes transforamtion matrix
 void draw_eye(ID2D1HwndRenderTarget* drt, FLOAT x, FLOAT y) {
 	auto trn = base_transformation;
 	trn.SetProduct(trn, D2D1::Matrix3x2F::Translation({ x, y }));

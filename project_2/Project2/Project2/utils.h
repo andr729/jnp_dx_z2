@@ -10,6 +10,12 @@
 FLOAT vecLen(D2D1_POINT_2F p);
 D2D1_POINT_2F normalize(D2D1_POINT_2F p);
 
+
+void makeRadBrush(ID2D1RadialGradientBrush** brush,
+			   	  ID2D1HwndRenderTarget* drt, D2D1_GRADIENT_STOP* stop_data,
+                  int num_rad_stops, ID2D1GradientStopCollection** stops,
+                  D2D1_POINT_2F center, D2D1_POINT_2F offset, FLOAT rx, FLOAT ry);
+
 template<int n>
 using BezierDefinition = std::array<std::tuple<FLOAT, FLOAT, FLOAT>, n>;
 
