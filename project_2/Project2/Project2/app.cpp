@@ -1,11 +1,7 @@
 ﻿#include <d2d1_3.h>
-#include <utility>
-#include <tuple>
-#include <cmath>
-#include <vector>
-#include <array>
 #include "app.h"
 #include "utils.h"
+#include "matrix.h"
 
 // This line is needed on my local computer for some reason
 // I suspose I have errors in linker configuration
@@ -35,11 +31,6 @@ namespace {
 		}
 	};
 
-
-	// Transformation matrices
-	D2D1::Matrix3x2F base_transformation;
-	D2D1::Matrix3x2F transformation;
-
 	constexpr D2D1_COLOR_F background_color =
 		{ .r = 0.6f, .g = 0.2f, .b = 0.2f, .a = 1.0f };
 	constexpr D2D1_COLOR_F main_color =
@@ -52,6 +43,8 @@ namespace {
 
 	ID2D1PathGeometry* bear_geometry = nullptr;
 	ID2D1PathGeometry* nouse_geometry = nullptr;
+
+	Matrix3 base_transformation;
 
 	FLOAT window_size_x;
 	FLOAT window_size_y;
@@ -171,9 +164,9 @@ void onMouseMove(FLOAT x, FLOAT y)  {
 // changes transforamtion matrix
 void draw_eye(ID2D1HwndRenderTarget* drt, FLOAT x, FLOAT y) {
 	auto trn = base_transformation;
-	trn.SetProduct(trn, D2D1::Matrix3x2F::Translation({ x, y }));
+	trn *= D2D1::Matrix3x2F::Translation({ x, y });
 
-	d2d_render_target->SetTransform(trn);
+	d2d_render_target->SetTransform(trn.getInner());
 	d2d_render_target->DrawEllipse(D2D1::Ellipse({ 0, 0 }, 100, 100), brush);
 	d2d_render_target->FillEllipse(D2D1::Ellipse({ 0, 0 }, 100, 100), eye_brush.brush);
 
@@ -197,7 +190,7 @@ void onPaint(HWND hwnd) {
 	base_transformation = D2D1::Matrix3x2F::Translation({ base_x_offset, base_y_offset });
 
 	// bear:
-	d2d_render_target->SetTransform(base_transformation);
+	d2d_render_target->SetTransform(base_transformation.getInner());
 	d2d_render_target->DrawGeometry(bear_geometry, brush, 5);
 	d2d_render_target->FillGeometry(bear_geometry, bear_brush.brush);
 
@@ -206,7 +199,10 @@ void onPaint(HWND hwnd) {
 	draw_eye(d2d_render_target, 150, -350);
 
 	// nouse:
-	d2d_render_target->SetTransform(base_transformation);
+	Matrix3 trn = D2D1::Matrix3x2F::Translation({ 0, -200 });
+	trn *= base_transformation;
+	d2d_render_target->SetTransform(trn.getInner());
+	
 	d2d_render_target->DrawGeometry(nouse_geometry, brush, 5);
 	d2d_render_target->FillGeometry(nouse_geometry, nouse_brush);
 
