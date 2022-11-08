@@ -5,6 +5,7 @@
 #include <vector>
 #include <array>
 #include "app.h"
+#include "utils.h"
 
 // This line is needed on my local computer for some reason
 // I suspose I have errors in linker configuration
@@ -58,11 +59,6 @@ namespace {
 	FLOAT base_y_offset = 600;
 }
 
-D2D1_POINT_2F normalize(D2D1_POINT_2F p) {
-	FLOAT len2 = p.x * p.x + p.y * p.y;
-	FLOAT len = std::sqrtf(len2 + 1e-10);
-	return { p.x / len, p.y / len };
-}
 
 void init(HWND hwnd) {
 	D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2d_factory);
@@ -75,7 +71,7 @@ void init(HWND hwnd) {
 	}
 
 	// x, y, control_point distance from previus point
-	std::array<std::tuple<FLOAT, FLOAT, FLOAT>, 9> pre_points = { {
+	BezierDefinition<9> pre_points = { {
 		{270, -20, 150},
 		{100, -100, 120},
 		{-130, -300, 100},
@@ -87,38 +83,8 @@ void init(HWND hwnd) {
 		{-169, -70, 80},
 	} };
 
-	std::vector<std::pair<D2D1_POINT_2F, D2D1_POINT_2F>> points;
-
-	D2D1_POINT_2F pre_control_point = { -100, 0 };
-	D2D1_POINT_2F control_point = pre_control_point;
-	D2D1_POINT_2F previous_point = { 0, 0 };
-	for (auto [x, y, b_scale] : pre_points) {
-		D2D1_POINT_2F current_point = {
-			x + previous_point.x,
-			y + previous_point.y,
-		};
-
-		D2D1_POINT_2F control_vector = {
-			previous_point.x - control_point.x,
-			previous_point.y - control_point.y
-		};
-
-		// normalize vector:
-
-		control_vector = normalize(control_vector);
-		control_point = {
-			previous_point.x + control_vector.x * b_scale,
-			previous_point.y + control_vector.y * b_scale
-		};
-
-		points.push_back({ {control_point.x, control_point.y}, { current_point.x, current_point.y } });
-		
-		// evil version:
-		//points.push_back({ {current_point.x, current_point.y}, { control_point.x, control_point.y } });
-
-		previous_point = current_point;
-	}
-
+	BezierPoints points = makeBezierPoints(pre_points, true, false);
+	
 	ID2D1GeometrySink* g_sink;
 	bear_geometry->Open(&g_sink);
 	g_sink->BeginFigure({0, 0}, D2D1_FIGURE_BEGIN_FILLED);
@@ -128,17 +94,7 @@ void init(HWND hwnd) {
 			{ {control_point.x, control_point.y}, { point.x, point.y } }
 		);
 	}
-	for (int i = points.size() - 2; i >= 0; i--) {
-		auto [control_point, _1] = points[i + 1];
-		auto [_2, point] = points[i];
-		g_sink->AddQuadraticBezier(
-			{ {-control_point.x, control_point.y}, { -point.x, point.y } }
-		);
-	}
-	g_sink->AddQuadraticBezier(
-		{ {-points[0].first.x, points[0].first.y}, {0, 0}}
-	);
-	
+
 	g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
 	g_sink->Close();
 
@@ -229,9 +185,12 @@ void draw_eye(ID2D1HwndRenderTarget* drt, FLOAT x, FLOAT y) {
 	d2d_render_target->FillEllipse(D2D1::Ellipse({ 0, 0 }, 100, 100), eye_brush);
 
 	D2D1_POINT_2F mouse_vec = {mouse_x - x, mouse_y - y};
-	mouse_vec = normalize(mouse_vec);
-	mouse_vec.x *= 70;
-	mouse_vec.y *= 70;
+	auto dist = vecLen(mouse_vec);
+	if (dist > 70) {
+		mouse_vec = normalize(mouse_vec);
+		mouse_vec.x *= 70;
+		mouse_vec.y *= 70;
+	}
 
 	d2d_render_target->FillEllipse(D2D1::Ellipse(mouse_vec, 30, 30), brush);
 }

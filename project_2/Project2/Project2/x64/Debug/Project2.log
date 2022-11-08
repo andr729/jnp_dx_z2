@@ -1,4 +1,0 @@
-﻿  main.cpp
-C:\Users\andrzej\Desktop\diretct_x_jnp\project_2\Project2\Project2\main.cpp(20,37): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
-C:\Users\andrzej\Desktop\diretct_x_jnp\project_2\Project2\Project2\main.cpp(20,15): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
-  Project2.vcxproj -> C:\Users\andrzej\Desktop\diretct_x_jnp\project_2\Project2\x64\Debug\Project2.exe
