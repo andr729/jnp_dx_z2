@@ -237,8 +237,6 @@ void draw_eye(ID2D1HwndRenderTarget* drt, FLOAT x, FLOAT y) {
 void onPaint(HWND hwnd) {
 	if (!d2d_render_target) recreateRenderTarget(hwnd);
 
-	makeBearGeometry(bear_state);
-
 	d2d_render_target->BeginDraw();
 	d2d_render_target->Clear(background_color);
 	
@@ -264,12 +262,18 @@ void onPaint(HWND hwnd) {
 	d2d_render_target->FillGeometry(nouse_geometry, nouse_brush);
 
 	if (mouse_left_down) {
-		bear_state -= 0.01f;
+		bear_state -= 0.03f;
+		if (bear_state < 1.0f) {
+			makeBearGeometry(bear_state);
+		}
 		bear_state = max(bear_state, 0.f);
 		d2d_render_target->DrawGeometry(happy_geometry, brush, 5);
 	}
 	else {
-		bear_state += 0.01f;
+		bear_state += 0.03f;
+		if (bear_state > 0.0f) {
+			makeBearGeometry(bear_state);
+		}
 		bear_state = min(bear_state, 1.f);
 		d2d_render_target->DrawGeometry(sad_geometry, brush, 5);
 	}
