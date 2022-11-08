@@ -4,6 +4,7 @@
 #include <windows.h>
 
 void init(HWND hwnd);
+void tick();
 void recreateRenderTarget(HWND hwnd);
 void destroyRenderTarget();
 void destroy();

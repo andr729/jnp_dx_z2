@@ -44,6 +44,9 @@ namespace {
 	ID2D1PathGeometry* bear_geometry = nullptr;
 	ID2D1PathGeometry* nouse_geometry = nullptr;
 
+	ID2D1PathGeometry* happy_geometry = nullptr;
+	ID2D1PathGeometry* sad_geometry = nullptr;
+
 	Matrix3 base_transformation;
 
 	FLOAT window_size_x;
@@ -54,6 +57,12 @@ namespace {
 
 	FLOAT base_x_offset = 400;
 	FLOAT base_y_offset = 600;
+
+	UINT64 tick_count;
+}
+
+void tick() {
+	tick_count++;
 }
 
 
@@ -68,6 +77,10 @@ void init(HWND hwnd) {
 	}
 	d2d_factory->CreatePathGeometry(&nouse_geometry);
 	if (nouse_geometry == nullptr) {
+		exit(1);
+	}
+	d2d_factory->CreatePathGeometry(&sad_geometry);
+	if (sad_geometry == nullptr) {
 		exit(1);
 	}
 
@@ -93,6 +106,16 @@ void init(HWND hwnd) {
 	} };
 	BezierPoints nouse_points = makeBezierPoints(nouse_pre_points, true, false);
 	makeID2D1PathGeometry(&nouse_geometry, nouse_points);
+
+
+	ID2D1GeometrySink* g_sink;
+	sad_geometry->Open(&g_sink);
+	g_sink->BeginFigure({ -100, 100 }, D2D1_FIGURE_BEGIN_HOLLOW);
+	g_sink->AddArc(D2D1_ARC_SEGMENT{
+		{100, 100}, {200, 100}, 50, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_SMALL
+	});
+	g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
+	g_sink->Close();
 
 
 	recreateRenderTarget(hwnd);
@@ -198,13 +221,17 @@ void onPaint(HWND hwnd) {
 	draw_eye(d2d_render_target, -150, -350);
 	draw_eye(d2d_render_target, 150, -350);
 
-	// nouse:
-	Matrix3 trn = D2D1::Matrix3x2F::Translation({ 0, -200 });
+	// mouth and nouse:
+	Matrix3 trn = D2D1::Matrix3x2F::Translation({ 0, 20 });
+	trn *= D2D1::Matrix3x2F::Rotation(20.f * sinf((tick_count % 3560) / 40.f), {0, 0});
+	trn *= D2D1::Matrix3x2F::Translation({ 0, -200 });
 	trn *= base_transformation;
 	d2d_render_target->SetTransform(trn.getInner());
 	
 	d2d_render_target->DrawGeometry(nouse_geometry, brush, 5);
 	d2d_render_target->FillGeometry(nouse_geometry, nouse_brush);
+
+	d2d_render_target->DrawGeometry(sad_geometry, brush, 5);
 
 	if (d2d_render_target->EndDraw() == D2DERR_RECREATE_TARGET) {
 		destroyRenderTarget();
