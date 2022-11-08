@@ -45,6 +45,7 @@ void makeID2D1PathGeometry(ID2D1PathGeometry** out_geometry, const BezierPoints&
 
 	g_sink->EndFigure(D2D1_FIGURE_END_OPEN);
 	g_sink->Close();
+	g_sink->Release();
 }
 
 

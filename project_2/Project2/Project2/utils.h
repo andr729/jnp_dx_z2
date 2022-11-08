@@ -48,11 +48,11 @@ void makeID2D1PathGeometry(ID2D1PathGeometry** out, const BezierPoints& points);
 * Allways start from (0, 0), and control point parallel to y-axis.
 * If y_symetry == true then curve symetric to x-axis will be added % point in between.
 * 
-* Evil is flag that changes control points with normal points -- inspiration from a bug,
+* Evil should be between 0 and 1 and it continuously changes control points with normal points -- inspiration from a bug,
 * can create interesting visual effects
 */
 template<int n>
-BezierPoints makeBezierPoints(BezierDefinition<n> definition, bool x_symetry, bool evil = false) {
+BezierPoints makeBezierPoints(BezierDefinition<n> definition, bool x_symetry, float evil = 0.f) {
 	BezierPoints out;
 
 	D2D1_POINT_2F pre_control_point = { -100, 0 };
@@ -77,11 +77,16 @@ BezierPoints makeBezierPoints(BezierDefinition<n> definition, bool x_symetry, bo
 		};
 
 
-		if (!evil) {
+		if (evil == 0.f) {
 			out.push_back({ {control_point.x, control_point.y}, { current_point.x, current_point.y } });
 		}
 		else {
-			out.push_back({ {current_point.x, current_point.y}, { control_point.x, control_point.y } });
+			auto cur_p_x = current_point.x + (control_point.x - current_point.x) * evil;
+			auto cur_p_y = current_point.y + (control_point.y - current_point.y) * evil;
+			
+			auto cp_p_x = control_point.x + (current_point.x - control_point.x) * evil;
+			auto cp_p_y = control_point.y + (current_point.y - control_point.y) * evil;
+			out.push_back({ {cp_p_x, cp_p_y}, { cur_p_x, cur_p_y } });
 		}
 
 		previous_point = current_point;

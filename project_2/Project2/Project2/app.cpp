@@ -1,4 +1,5 @@
 ﻿#include <d2d1_3.h>
+#include <algorithm>
 #include "app.h"
 #include "utils.h"
 #include "matrix.h"
@@ -41,6 +42,25 @@ namespace {
 		{ .r = 0.2, .g = 0.2f, .b = 0.2f, .a = 1.0f };
 
 
+	// x, y, control_point distance from previus point
+	constexpr BezierDefinition<9> bear_pre_points = { {
+		{270, -20, 150},
+		{100, -100, 120},
+		{-130, -300, 100},
+		{2, -2, 1},
+		{70, -80, 80},
+		{-30, -50, 40},
+		{-110, 50, 70},
+		{-3, -1, 2},
+		{-169, -70, 80},
+	} };
+
+	constexpr BezierDefinition<3> nouse_pre_points = { {
+		{60, -10, 40},
+		{-20, -50, 20},
+		{-40, -20, 27},
+	} };
+
 	ID2D1PathGeometry* bear_geometry = nullptr;
 	ID2D1PathGeometry* nouse_geometry = nullptr;
 
@@ -61,20 +81,30 @@ namespace {
 	FLOAT base_y_offset = 300;
 
 	UINT64 tick_count;
+
+	FLOAT bear_state = 0.f;
 }
 
 void tick() {
 	tick_count++;
 }
 
+void makeBearGeometry(float evil) {
+	if (bear_geometry) {
+		bear_geometry->Release();
+	}
+	d2d_factory->CreatePathGeometry(&bear_geometry);
+	if (bear_geometry == nullptr) {
+		exit(1);
+	}
+	BezierPoints bear_points = makeBezierPoints(bear_pre_points, true, evil);
+	makeID2D1PathGeometry(&bear_geometry, bear_points);
+}
+
 
 void init(HWND hwnd) {
 	D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2d_factory);
 	if (d2d_factory == nullptr) {
-		exit(1);
-	}
-	d2d_factory->CreatePathGeometry(&bear_geometry);
-	if (bear_geometry == nullptr) {
 		exit(1);
 	}
 	d2d_factory->CreatePathGeometry(&nouse_geometry);
@@ -90,29 +120,10 @@ void init(HWND hwnd) {
 		exit(1);
 	}
 
-	// x, y, control_point distance from previus point
-	BezierDefinition<9> bear_pre_points = { {
-		{270, -20, 150},
-		{100, -100, 120},
-		{-130, -300, 100},
-		{2, -2, 1},
-		{70, -80, 80},
-		{-30, -50, 40},
-		{-110, 50, 70},
-		{-3, -1, 2},
-		{-169, -70, 80},
-	} };
-	BezierPoints bear_points = makeBezierPoints(bear_pre_points, true, false);
-	makeID2D1PathGeometry(&bear_geometry, bear_points);
+	makeBearGeometry(0.f);
 
-	BezierDefinition<3> nouse_pre_points = { {
-		{60, -10, 40},
-		{-20, -50, 20},
-		{-40, -20, 27},
-	} };
-	BezierPoints nouse_points = makeBezierPoints(nouse_pre_points, true, false);
+	BezierPoints nouse_points = makeBezierPoints(nouse_pre_points, true);
 	makeID2D1PathGeometry(&nouse_geometry, nouse_points);
-
 
 	ID2D1GeometrySink* sad_g_sink;
 	sad_geometry->Open(&sad_g_sink);
@@ -226,6 +237,8 @@ void draw_eye(ID2D1HwndRenderTarget* drt, FLOAT x, FLOAT y) {
 void onPaint(HWND hwnd) {
 	if (!d2d_render_target) recreateRenderTarget(hwnd);
 
+	makeBearGeometry(bear_state);
+
 	d2d_render_target->BeginDraw();
 	d2d_render_target->Clear(background_color);
 	
@@ -251,9 +264,13 @@ void onPaint(HWND hwnd) {
 	d2d_render_target->FillGeometry(nouse_geometry, nouse_brush);
 
 	if (mouse_left_down) {
+		bear_state -= 0.01f;
+		bear_state = max(bear_state, 0.f);
 		d2d_render_target->DrawGeometry(happy_geometry, brush, 5);
 	}
 	else {
+		bear_state += 0.01f;
+		bear_state = min(bear_state, 1.f);
 		d2d_render_target->DrawGeometry(sad_geometry, brush, 5);
 	}
 
